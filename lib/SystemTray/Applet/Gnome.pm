@@ -14,11 +14,11 @@ SystemTray::Applet::Gnome - Gnome support for SystemTray::Applet
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 =head1 SYNOPSIS
@@ -55,9 +55,25 @@ sub init
 		return undef;	
 	}
 
-	$self->{"gnome"}->{"label"} = Gtk2::Label->new("loading");
-	$self->{"gnome"}->{"applet"}->add($self->{"gnome"}->{"label"});
-	$self->{"gnome"}->{"applet"}->show_all();
+        $self->{"gnome"}->{"eventbox"} = Gtk2::EventBox->new();
+
+        my $button_release = sub {
+                my ( $self , $e ) = @_;
+                if( $e->button() == 3 )
+                {
+                        my $menu = Gtk2::Menu->new();
+                        my $menu_item = Gtk2::MenuItem->new_with_label("Quit");
+                        $menu_item->signal_connect( "activate" => sub { Gtk2->main_quit; } );
+                        $menu_item->show();
+                        $menu->append($menu_item);
+                        $menu->popup( undef , undef , undef , undef , $e->button() , $e->time()  );
+                        print "Done\n";
+                }
+        };
+
+        $self->{"gnome"}->{"eventbox"}->signal_connect( "button_release_event" => $button_release );
+        $self->{"gnome"}->{"applet"}->add($self->{"gnome"}->{"eventbox"});
+        $self->{"gnome"}->{"applet"}->show_all();
 
 	return $self;
 }
@@ -90,8 +106,14 @@ sub create_icon
 {
 	my ( $self , $icon ) = @_;
 
-	my $image = Gtk2::Image->new_from_file($icon);
-	return $image;
+	if( defined( $icon ) )
+	{
+		return Gtk2::Image->new_from_file($icon);
+	}	
+	else
+	{
+		return undef;
+	}
 }
 
 
@@ -106,26 +128,27 @@ Display the icon with the text as hovertext if we have an icon or just the text 
 sub display
 {
 	my ( $self ) = @_;
+
+	my @children = $self->{"gnome"}->{"eventbox"}->get_children();
+	foreach my $child( @children )
+        {
+                $self->{"gnome"}->{"eventbox"}->remove($child);
+        }
+
 	if( $self->{"icon"} )
 	{
-		my @children = $self->{"gnome"}->{"applet"}->get_children();
-		foreach my $child( @children )
-		{
-			$self->{"gnome"}->{"applet"}->remove($child);
-		}
-		@children = ();
-
-		my $eventbox = Gtk2::EventBox->new();
-		$eventbox->add( $self->{"icon"} );
-		$self->{"gnome"}->{"tooltip"} = Gtk2::Tooltips->new();
-		$self->{"gnome"}->{"tooltip"}->enable();
-		$self->{"gnome"}->{"tooltip"}->set_tip(  $eventbox , $self->{"text"} );
-		$self->{"gnome"}->{"applet"}->add( $eventbox );
+		$self->{"gnome"}->{"eventbox"}->add( $self->{"icon"} );
+		my $tooltip = Gtk2::Tooltips->new();
+		$tooltip->enable();
+		$tooltip->set_tip(  $self->{"gnome"}->{"eventbox"} , $self->{"text"} );
 	}
 	else
 	{
-		$self->{"gnome"}->{"label"}->set_label( $self->{"text"} );
+		my $label = Gtk2::Label->new($self->{"text"});
+		$self->{"gnome"}->{"eventbox"}->add($label);
 	}
+
+
 	$self->{"gnome"}->{"applet"}->show_all();
 }
 

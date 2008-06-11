@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:                SystemTray-Applet-Gnome
-version:             0.01
-abstract:            The great new SystemTray::Applet::Gnome!
+version:             0.02
+abstract:            Gnome support for SystemTray::Applet
 license:             ~
 author:              
     - Peter Sinnott <psinnott@cpan.org>
